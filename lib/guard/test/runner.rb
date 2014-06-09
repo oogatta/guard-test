@@ -22,7 +22,13 @@ module Guard
 
         ::Guard::UI.info(opts[:message] || "Running: #{paths.join(' ')}", reset: true)
 
-        system(test_unit_command(paths))
+        result = system(test_unit_command(paths))
+
+        if drb? || zeus? || spring?
+          ::Guard::Notifier.notify("#{$?.exitstatus} errors.", title: 'Test::Unit results', image: result ? :success : :failed)
+        end
+
+        result
       end
 
       def bundler?
@@ -98,7 +104,7 @@ module Guard
       def includes_and_requires(paths)
         parts = []
         parts << Array(options[:include]).map { |path| "-I\"#{path}\"" } unless zeus? || spring?
-        parts << paths if zeus?
+        parts << paths if zeus? || spring?
         parts << '-r bundler/setup' if bundler?
         parts << '-r rubygems' if rubygems?
 
